@@ -29,11 +29,11 @@ class HashcatCracker:
         self.executable_name = self.executable_name[:k] + "." + self.executable_name[k + 1:]
         self.cracker_path = Path(self.config.get_value('crackers-path'), str(cracker_id))
 
-        self.executable_path = Path(self.cracker_path, self.executable_name)
-        if not os.path.isfile(self.executable_path):  # in case it's not the new hashcat filename, try the old one (hashcat<bit>.<ext>)
+        if not os.path.isfile(Path(self.cracker_path, self.executable_name)):  # in case it's not the new hashcat filename, try the old one (hashcat<bit>.<ext>)
             self.executable_name = binary_download.get_version()['executable']
             k = self.executable_name.rfind(".")
             self.executable_name = self.executable_name[:k] + get_bit() + "." + self.executable_name[k + 1:]
+        self.executable_path = Path(self.cracker_path, self.executable_name)
 
         if Initialize.get_os() == 1:
             # Windows
@@ -100,7 +100,7 @@ class HashcatCracker:
         args.append(f'--outfile-check-dir="{zaps_file}"')
         args.append(f'-o "{output_file}"')
         args.append(f'--outfile-format={self.get_outfile_format()}')
-        args.append('-p "\t"')
+        #args.append('-p "\t"')
         args.append(f"-s {chunk['skip']}")
         args.append(f"-l {chunk['length']}")
         
@@ -206,7 +206,7 @@ class HashcatCracker:
         post_args.append(f'--outfile-check-dir="{zaps_file}"')
         post_args.append(f'-o "{output_file}"')
         post_args.append(f'--outfile-format={self.get_outfile_format()}')
-        post_args.append('-p "\t"')
+        #post_args.append('-p "\t"')
         post_args.append(f"--remove-timer={task['statustimer']}")
         post_args.append(f'"{hashlist_file}"')
 
@@ -434,9 +434,10 @@ class HashcatCracker:
                 elif identifier == 'ERR':
                     msg = escape_ansi(line.replace(b"\r\n", b"\n").decode('utf-8')).strip()
                     if msg and str(msg) != '^C':  # this is maybe not the fanciest way, but as ctrl+c is sent to the underlying process it reports it to stderr
-                        logging.error("HC error: " + msg)
-                        send_error(msg, self.config.get_value('token'), task['taskId'], chunk['chunkId'])
-                        sleep(0.1)  # we set a minimal sleep to avoid overreaction of the client sending a huge number of errors, but it should not be slowed down too much, in case the errors are not critical and the agent can continue
+                        if msg and str(msg) != 'hiprtcCompileProgram is missing from HIPRTC shared library.':  # k.anev: ignore "that, it does not block if you have other devices for cracking"
+                            logging.error("HC error: " + msg)
+                            send_error(msg, self.config.get_value('token'), task['taskId'], chunk['chunkId'])
+                            sleep(0.1)  # we set a minimal sleep to avoid overreaction of the client sending a huge number of errors, but it should not be slowed down too much, in case the errors are not critical and the agent can continue
 
     def measure_keyspace(self, task, chunk):
         if 'usePrince' in task.get_task() and task.get_task()['usePrince']:
@@ -560,8 +561,8 @@ class HashcatCracker:
         args.append('--restore-disable')
         args.append('--potfile-disable')
         args.append('--session=hashtopolis')
-        args.append('-p')
-        args.append('"\t"')
+        #args.append('-p')
+        #args.append('"\t"')
         
         
       
@@ -630,8 +631,8 @@ class HashcatCracker:
         args.append('--restore-disable')
         args.append('--potfile-disable')
         args.append('--session=hashtopolis')
-        args.append('-p')
-        args.append('"\t"')
+        #args.append('-p')
+        #args.append('"\t"')
         
         hashlist_path = Path(self.config.get_value('hashlists-path'), str(task['hashlistId']))
         hashlist_out_path = Path(self.config.get_value('hashlists-path'), f"{str(task['hashlistId'])}.out")
